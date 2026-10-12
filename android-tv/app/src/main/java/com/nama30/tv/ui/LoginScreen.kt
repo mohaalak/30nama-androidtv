@@ -82,7 +82,7 @@ fun LoginScreen() {
 
     Box(Modifier.fillMaxSize()) {
         Img(backdrop, Modifier.fillMaxSize().alpha(.35f))
-        Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(C.Bg, C.Bg.copy(alpha = .7f), C.Bg.copy(alpha = .4f)))))
+        Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(C.Bg, C.Bg.copy(alpha = .7f), C.Bg.copy(alpha = .4f)).let { if (rtl) it.reversed() else it })))
         Column(Modifier.align(Alignment.CenterStart).padding(start = START_PAD.dp)) {
             Text(t("signIn"), style = T.Small.copy(color = C.Text3, fontWeight = FontWeight.Bold))
             Spacer(Modifier.height(4.dp))

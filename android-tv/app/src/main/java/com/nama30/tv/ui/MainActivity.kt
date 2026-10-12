@@ -80,10 +80,11 @@ private fun Root(onExit: () -> Unit, debugDetails: Long = 0, debugPlay: Boolean 
                 val top = Nav.top
                 val playing = Nav.player != null
                 if (top != null && !playing) {
-                    // keyed by stack depth + screen so going Back restores scroll positions
-                    val k = "${Nav.stack.size}:$top"
+                    // keyed by stack depth + screen so going Back restores scroll positions;
+                    // and by language so remembered strings and loaded data are rebuilt after a switch
+                    val k = "${Prefs.lang}:${Nav.stack.size}:$top"
                     key(k) { holder.SaveableStateProvider(k) { ScreenContent(top) } }
-                    if (top != Screen.Login) Rail(Modifier.align(Alignment.CenterStart))
+                    if (top != Screen.Login) key(Prefs.lang) { Rail(Modifier.align(Alignment.CenterStart)) }
                 }
                 Nav.player?.let { PlayerScreen(it) }
                 BackHandler(enabled = !playing) {

@@ -99,6 +99,8 @@ private fun GenreTile(g: Genre, modifier: Modifier, onClick: () -> Unit) {
     }
 }
 
+/** Archives opened from the rail: their title is a UI string, so it follows the language. */
+private val RAIL_SLUGS = setOf("movies", "series", "anime")
 private val SORTS = listOf("date" to "newest", "favorite" to "popular", "update" to "updated")
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -135,7 +137,7 @@ fun ArchiveScreen(slug: String, name: String) {
 
     Column(Modifier.fillMaxSize().background(C.Bg).padding(start = START_PAD.dp, top = 36.dp)) {
         Row(verticalAlignment = Alignment.Bottom) {
-            Text(name, style = T.H1)
+            Text(if (slug in RAIL_SLUGS) t(slug) else name, style = T.H1)
             if (total > 0) Text("   ${"%,d".format(total)} ${t("results")}", style = T.Small.copy(color = C.Text3), modifier = Modifier.padding(bottom = 4.dp))
         }
         Spacer(Modifier.height(12.dp))

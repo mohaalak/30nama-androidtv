@@ -71,7 +71,7 @@ fun Rail(modifier: Modifier = Modifier) {
     val curFr = remember { FocusRequester() }
     Box(modifier.fillMaxHeight()) {
         AnimatedVisibility(open, enter = fadeIn(), exit = fadeOut()) {
-            Box(Modifier.fillMaxHeight().width(320.dp).background(Brush.horizontalGradient(listOf(C.Bg, C.Bg.copy(alpha = .92f), Color.Transparent))))
+            Box(Modifier.fillMaxHeight().width(320.dp).background(Brush.horizontalGradient(listOf(C.Bg, C.Bg.copy(alpha = .92f), Color.Transparent).let { if (rtl) it.reversed() else it })))
         }
         Column(
             Modifier.fillMaxHeight().width(if (open) 220.dp else 56.dp).padding(top = 22.dp, bottom = 22.dp)

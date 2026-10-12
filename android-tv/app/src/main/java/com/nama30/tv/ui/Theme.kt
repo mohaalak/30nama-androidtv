@@ -51,6 +51,13 @@ object T {
 fun t(k: String) = Strings.t(Prefs.lang, k)
 val rtl get() = Prefs.lang == "fa"
 
+/** Switches the UI language. Cached server data was fetched with the old c-language header, so it is dropped too. */
+fun setLanguage(v: String) {
+    if (v == Prefs.lang) return
+    Prefs.changeLang(v)
+    com.nama30.tv.data.Api.dropLangCaches()
+}
+
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun AppTheme(content: @Composable () -> Unit) {
