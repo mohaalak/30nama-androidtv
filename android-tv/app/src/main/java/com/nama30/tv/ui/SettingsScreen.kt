@@ -46,6 +46,8 @@ import com.nama30.tv.data.Prefs
 import kotlinx.coroutines.launch
 
 private val SECTIONS = listOf("account", "language", "playback", "about")
+/** Set when a language row is picked, so the rebuilt Settings screen refocuses the language list. */
+private var focusLangOnce = false
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -54,6 +56,7 @@ fun SettingsScreen(section: String) {
     var confirmLogout by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val secFr = remember { FocusRequester() }
+    val paneFr = remember { FocusRequester() }
     var paneFocus by remember { mutableStateOf(false) }
     androidx.activity.compose.BackHandler(enabled = paneFocus) { runCatching { secFr.requestFocus() } }
 
@@ -62,7 +65,7 @@ fun SettingsScreen(section: String) {
         Spacer(Modifier.height(24.dp))
         Row {
             Column(Modifier.width(220.dp).focusRestorer { secFr }.focusGroup(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                SECTIONS.forEach { s -> Row0(t(s), selected = s == sec, modifier = if (s == sec) Modifier.focusRequester(secFr) else Modifier, onFocus = { sec = s }) {} }
+                SECTIONS.forEach { s -> Row0(t(s), selected = s == sec, modifier = if (s == sec) Modifier.focusRequester(secFr) else Modifier, onFocus = { sec = s }) { runCatching { paneFr.requestFocus() } } }
             }
             Spacer(Modifier.width(40.dp))
             Column(Modifier.width(520.dp).onFocusChanged { paneFocus = it.hasFocus }.focusGroup(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -73,15 +76,21 @@ fun SettingsScreen(section: String) {
                         if (Prefs.loggedIn) {
                             Info(t("userType"), u?.type ?: "-")
                             Info(t("expires"), u?.expire ?: t("unknown"))
-                            Row0(t("logout"), danger = true) { confirmLogout = true }
-                        } else Row0(t("login")) { Nav.reset(Screen.Login) }
+                            Row0(t("logout"), danger = true, modifier = Modifier.focusRequester(paneFr)) { confirmLogout = true }
+                        } else Row0(t("login"), modifier = Modifier.focusRequester(paneFr)) { Nav.reset(Screen.Login) }
                     }
-                    "language" -> Opt(t("language"), listOf("en" to "English", "fa" to "فارسی"), Prefs.lang) { Prefs.changeLang(it); Api.dropHome() }
+                    "language" -> listOf("en" to "English", "fa" to "فارسی").forEach { (code, label) ->
+                        val cur = Prefs.lang == code
+                        // the screen is rebuilt on a language change; land back on the chosen row
+                        Row0(label, selected = cur, trailing = if (cur) "✓" else null, modifier = if (cur) Modifier.focusRequester(paneFr) else Modifier) {
+                            if (!cur) { focusLangOnce = true; Nav.replace(Screen.Settings("language")); setLanguage(code) }
+                        }
+                    }
                     "playback" -> {
                         var sub by remember { mutableStateOf(Prefs.defaultSub) }
                         var size by remember { mutableIntStateOf(Prefs.subSize) }
                         var auto by remember { mutableStateOf(Prefs.autoplay) }
-                        Opt(t("defSubs"), listOf("off" to t("off"), "fa" to t("persian"), "en" to t("english")), sub) { sub = it; Prefs.defaultSub = it }
+                        Opt(t("defSubs"), listOf("off" to t("off"), "fa" to t("persian"), "en" to t("english")), sub, Modifier.focusRequester(paneFr)) { sub = it; Prefs.defaultSub = it }
                         Opt(t("subSize"), listOf(38 to t("small"), 46 to t("medium"), 54 to t("large")), size) { size = it; Prefs.subSize = it }
                         Text(t("sample"), style = T.Body.copy(fontSize = (size / 2).sp, fontWeight = FontWeight.Medium), modifier = Modifier.padding(vertical = 10.dp, horizontal = 14.dp))
                         Opt(t("autoplay"), listOf(true to t("on"), false to t("off")), auto) { auto = it; Prefs.autoplay = it }
@@ -95,7 +104,7 @@ fun SettingsScreen(section: String) {
             }
         }
     }
-    AutoFocus(secFr)
+    AutoFocus(if (focusLangOnce) paneFr.also { focusLangOnce = false } else secFr)
     if (confirmLogout) ConfirmDialog(t("logoutTitle"), t("logoutBody"), t("logout"), danger = true, onOk = {
         scope.launch { Api.logout(); Prefs.changeGuest(false); Nav.reset(Screen.Login) }
     }) { confirmLogout = false }
@@ -129,10 +138,10 @@ private fun Info(label: String, value: String) {
 
 /** Option row: OK or Left/Right cycles through values. */
 @Composable
-private fun <V> Opt(label: String, values: List<Pair<V, String>>, cur: V, set: (V) -> Unit) {
+private fun <V> Opt(label: String, values: List<Pair<V, String>>, cur: V, modifier: Modifier = Modifier, set: (V) -> Unit) {
     val i = values.indexOfFirst { it.first == cur }.coerceAtLeast(0)
     fun cycle(d: Int) = set(values[(i + d + values.size) % values.size].first)
-    Row0(label, trailing = "‹  ${values[i].second}  ›", modifier = Modifier.onPreviewKeyEvent {
+    Row0(label, trailing = "‹  ${values[i].second}  ›", modifier = modifier.onPreviewKeyEvent {
         if (it.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
         when (it.key) { Key.DirectionLeft -> { cycle(if (rtl) 1 else -1); true }; Key.DirectionRight -> { cycle(if (rtl) -1 else 1); true }; else -> false }
     }) { cycle(1) }

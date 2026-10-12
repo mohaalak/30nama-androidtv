@@ -186,6 +186,13 @@ object Api {
     }
     fun dropHome() { homeMem = null }
 
+    /** Everything that holds server text in the previous language (c-language header). */
+    fun dropLangCaches() {
+        dropHome(); Prefs.homeCache = null; menuMem = null
+        synchronized(singleCache) { singleCache.clear() }
+        synchronized(streamCache) { streamCache.clear() }
+    }
+
     suspend fun continueWatching(): List<Post> = runCatching { posts(result("continue_watching")) }.getOrDefault(emptyList())
 
     /* small LRU caches so returning from the player / Back shows Details instantly */
